@@ -62,7 +62,7 @@
         <span id="header" style="display:none">
         <sl-dialog id="alert-help" class="dialog-width" style="--width: 80vw;">
         <div style="height:100%; overflow:scroll">
-            <img src="./site_resources/Website_Fig.jpg" alt="Experiment procedure overview" height="170px" style="display:block; margin-left: auto; margin-right: auto"> 
+            <img src="./Website_Fig.jpg" alt="Experiment procedure overview" height="170px" style="display:block; margin-left: auto; margin-right: auto"> 
             <sl-card class="card">
                 <h3>CRISPRi Volcano Plot Guide</h3>
                 <p>
@@ -264,7 +264,7 @@
         var ro = new ResizeObserver(debounce((entries) => Plotly.Plots.resize('plot_container'), 100)).observe(document.getElementById('plot_container'));
 
         $(document).ready(function () {
-            Papa.parse('./site_resources/Website_ResultsMx.csv', {
+            Papa.parse('./Website_ResultsMx.csv', {
                 download: true,
                 dynamicTyping: false,
                 complete: (results, file) => {
