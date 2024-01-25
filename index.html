@@ -1,0 +1,354 @@
+
+<!DOCTYPE html>
+<html lang='en'>
+    <head>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.11.2/cdn/themes/light.css" />
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.11.2/cdn/shoelace-autoloader.js"></script>
+        
+        <script src="https://unpkg.com/papaparse@latest/papaparse.min.js"></script>
+        <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+
+        <link href="https://cdn.datatables.net/v/dt/jq-3.7.0/dt-1.13.6/b-2.4.2/b-colvis-2.4.2/b-html5-2.4.2/r-2.5.0/sc-2.2.0/sl-1.7.0/datatables.min.css" rel="stylesheet">
+        <script src="https://cdn.datatables.net/v/dt/jq-3.7.0/dt-1.13.6/b-2.4.2/b-colvis-2.4.2/b-html5-2.4.2/r-2.5.0/sc-2.2.0/sl-1.7.0/datatables.min.js"></script>
+        <style>
+            body, html {
+                margin: 0;
+                padding: 0;
+            }
+            b {
+                font-weight: 600;
+            }
+            li {
+                display: block;
+                list-style-position: inside;
+                margin: 0;
+            }
+            li:before { 
+                content:"\0020\00BB\0020";  
+                color: var(--sl-color-primary-600);
+                font-size: 2em;
+            }
+
+            sl-dialog::part(panel) {
+                border-radius: 3px;
+            }
+            sl-dialog::part(header) {
+                height: 50px;
+                position: relative;
+                border-radius: 3px 3px 0px 0px;
+                text-align: center;
+                color: var(--sl-color-primary-900)
+            }
+
+            sl-tab-panel::part(base), sl-tab-group::part(base), sl-tab-group::part(body) {
+                height: 100%;
+                overflow-y: hidden;
+            }
+
+            sl-alert::part(message) {
+                padding: var(--sl-spacing-small);
+            }
+
+            .skeleton-paragraphs sl-skeleton {
+              margin-bottom: 1rem;
+            }
+            .square::part(indicator) {
+                --border-radius: 0px !important;
+            }
+        </style>
+        
+    </head>
+    <body style="height: 100vh">
+        <span id="header" style="display:none">
+        <sl-dialog id="alert-help" class="dialog-width" style="--width: 80vw;">
+        <div style="height:100%; overflow:scroll">
+            <img src="./site_resources/Website_Fig.jpg" alt="Experiment procedure overview" height="170px" style="display:block; margin-left: auto; margin-right: auto"> 
+            <sl-card class="card">
+                <h3>CRISPRi Volcano Plot Guide</h3>
+                <p>
+                    This website allows the exploration of CRISPR interference (CRISPRi) data on enhancers in normal human astrocytes (NHAs), from Green et al. 2024.
+                    For each enhancer-gene pair tested in the screen, the following data is available:
+                </p>
+                <p>
+                    <b>Statistical significance and effect size (Hit, log2FC, P, FDR)</b><span style="color: var(--sl-color-primary-700)">, displayed in a searchable table and displayed on the corresponding Volcano plot.</span>
+                    <ul>
+                        <li>search the table by gene name or hg38 genome coordinates</li>
+                        <li>to download the data click on the CSV button.</li>
+                    </ul>
+                </b>
+                <p>
+                    <b>ATAC-seq, TT-seq, and Deep-learning-based functional variant annotation</b><span style="color: var(--sl-color-primary-700)">, displayed as a UCSC genome browser track collection.</span>
+                    <ul>
+                        <li>select an enhancer-gene pair in the table OR plot and click the UCSC button to navigate to the enhancer position.</li>
+                    </ul>
+                </b>
+            </sl-card>
+        </div>
+    </sl-dialog>
+        <div style="height:70px; margin-bottom: 1px;">
+            <sl-alert open style="display: block">
+                <sl-icon slot="icon" name="info-circle"></sl-icon>
+                <div style="justify-content: space-between; display: flex;">
+                    <p>All data sourced from supplementary <span style="color:var(--sl-color-primary-900)">Website_ResultsMx.csv</span></p>
+                    <span style="padding-right: 20px">                
+                        <sl-button-group label="External links">
+                            <sl-tooltip content="Publication">
+                                <sl-button disabled><sl-icon name="mortarboard" label="CRISPRi paper"></sl-icon></sl-button>
+                            </sl-tooltip>
+                            <sl-tooltip content="Source code">
+                                <sl-button href="https://github.com/voineagulabunsw/crispri"><sl-icon name="github" label="Source code"></sl-icon></sl-button>
+                            </sl-tooltip>
+                        </sl-button-group>
+                        <sl-tooltip content="Show help" trigger="hover">
+                            <sl-button id="alert-help-button" label="Show help"><sl-icon name="question-circle"></sl-icon></sl-button>
+                        </sl-tooltip>
+                    </span>
+                </div>
+            </sl-alert>  
+        </div>
+        <div style="height: calc(100vh - 70px)">
+            <sl-split-panel vertical style="--min: 30%; --max: 70%; --divider-width: 20px; height:100%">
+                <sl-icon slot="divider" name="grip-vertical"></sl-icon>
+                <div slot="start" style="height:100%; overflow-y: hidden">
+                    <sl-skeleton class="skeleton-loading square" style="height:80%" effect="sheen"></sl-skeleton>
+                    <div style="height: 100%; width: min(100%, 3000px); margin-left: auto; margin-right: auto; display: block" id="plot_container"></div>
+                </div>
+                <div slot="end" style="height:100%; overflow-y: hidden">
+                    <div style="margin: 20px; height: 100%">
+                        <div class="skeleton-loading skeleton-paragraphs" style="margin: 3px;">
+                            <sl-skeleton effect="sheen"></sl-skeleton>
+                            <sl-skeleton effect="sheen"></sl-skeleton>
+                            <sl-skeleton effect="sheen"></sl-skeleton>
+                            <sl-skeleton effect="sheen"></sl-skeleton>
+                            <sl-skeleton effect="sheen"></sl-skeleton>
+                        </div>
+                        <table id="table_container" class="display" cellspacing="0"></table>
+                    </div>
+                </div>
+            </sl-split-panel>
+        </div>
+    <script>
+        let table = undefined;
+        var range_search = undefined;
+        let ranges = undefined;
+
+        const debounce = (callback, wait, starve=false) => {
+            let pending = null;
+            let last = null;
+            return (...args) => {
+                const now = Date.now();
+                if(starve || (now - (last + wait)) < wait) window.clearTimeout(pending);
+                pending = window.setTimeout(() => {last=now; callback.apply(null, args)}, wait);
+            };
+        }
+
+        function get_genomic_range(val) {
+            ret = (/^(chr[0-9XYxy]+):([0-9]+)-([0-9]+)$/.exec(val.trim()))
+            return ret ? [ret[1], parseInt(ret[2]), parseInt(ret[3])] : null;
+        }
+
+        function is_in_genomic_range(inner, outer) {
+            return inner[0] == outer[0] && inner[1] >= outer[1] && inner[2] <= outer[2];
+        }
+
+
+        DataTable.ext.search.push((settings, data, dataIndex) => (
+            // Modify datatable search only when range_search is set
+            !range_search || is_in_genomic_range(ranges[dataIndex], range_search)
+        ));
+
+        function get_plot_trace_empty() {
+            // Force legend to be shown even if other traces are empty
+            return ({
+                type: "scattergl",
+                mode: "markers",
+                hoverinfo: 'skip',
+                name: " ".repeat(30),
+                marker: { color: "transparent"},
+                x: [0],
+                y: [0],
+                showlegend: true
+            });
+        }
+
+        function get_plot_traces(results, columns, trace_metadatas, xLabel='log2fc', yLabel='P', lLabel='Gene') {
+            const rows = results.data().toArray();
+            const indices = results.indexes();
+
+            const xIndex = columns.indexOf(xLabel);
+            const yIndex = columns.indexOf(yLabel);
+            const lIndex = columns.indexOf(lLabel);
+
+            const x = rows.map(row => row[xIndex]);
+            const y = rows.map(row => -Math.log10(row[yIndex]));
+
+            return trace_metadatas.map(([label, color, filter_fn, can_select]) => {
+                const sub_indices = rows.reduce((prev, curr, i) => {filter_fn(curr) && prev.push(i); return prev}, []);
+                return {
+                    x: sub_indices.map(i => x[i]),
+                    y: sub_indices.map(i => y[i]),
+                    mode: 'markers',
+                    type: 'scattergl',
+                    hoverinfo: !can_select && 'skip',
+                    showlegend: can_select,
+                    customdata: can_select && sub_indices.map(i => indices[i]),
+                    name: label,
+                    text: can_select && sub_indices.map(i => rows[i][lIndex]),
+                    marker: { size: 8, color: color}
+                }
+            });
+        }
+
+        function plot_add_selected(results, columns) {
+            if(results.data().toArray().length) {
+                const traces = get_plot_traces(results, columns, [['selected', '#555555', (row) => true, false]]);
+                Plotly.addTraces('plot_container', traces);
+            } else {
+                // https://stackoverflow.com/questions/67892136/plotly-deletetraces-using-traces-attribute-name
+                const plot = document.getElementById('plot_container');
+                const indexToDelete = plot.data.findIndex(trace => trace.name === 'selected');
+                if (indexToDelete !== -1) {
+                    Plotly.deleteTraces(plot, indexToDelete);
+                }
+            }
+        }
+
+        function plot_main(results, removed, columns, separatorLabel='Hit') {
+            const tIndex = columns.indexOf(separatorLabel)
+            const trace_metas = [
+                [separatorLabel + ' TRUE', '#ff7f0e', (row) => row[tIndex][0] != 'F', true],
+                [separatorLabel + ' FALSE', '#1f77b4', (row) => row[tIndex][0] != 'T', true]
+                
+            ]
+            let traces = get_plot_traces(removed, columns, [['all', '#bbbbbb', (row) => true, false]]);
+            traces = traces.concat(get_plot_traces(results, columns, trace_metas));
+            traces = traces.concat(get_plot_trace_empty());
+
+            let max_x = 0;
+            traces.forEach(t => max_x = Math.max(max_x, ...(t.x.map(x => Math.abs(x)))));
+            max_x *= 1.2;
+
+            const layout = {
+                autosize: true,
+                xaxis: {
+                    title: {text: 'Log2 fold-change'},
+                    range: [-max_x, max_x],
+                    constraintoward: 'center',
+                },
+                yaxis: {
+                    title: {text: '-log10 empirical P'},
+                    autorange: true,
+                },
+                title:'CRISPRi',
+                legend: {
+                    x: 1,
+                    xanchor: 'right',
+                    y: 1
+                }
+            };
+            const config = {responsive: true}
+            const myPlot = Plotly.react('plot_container', traces, layout, config);
+
+            document.getElementById('plot_container')
+            .removeAllListeners('plotly_click')
+            .on('plotly_click', function(data) {
+                console.log(data)
+                const row_index = data.points[0].customdata
+                if(row_index !== undefined) {
+                    table.row(row_index).select().scrollTo(false)
+                }
+            });
+        }
+
+        // Attempt to rescale plotly when container resizes
+        var ro = new ResizeObserver(debounce((entries) => Plotly.Plots.resize('plot_container'), 100)).observe(document.getElementById('plot_container'));
+
+        $(document).ready(function () {
+            Papa.parse('./site_resources/Website_ResultsMx.csv', {
+                download: true,
+                dynamicTyping: false,
+                complete: (results, file) => {
+                    $('.skeleton-loading').hide();
+                    $('#header').show();
+
+                    // Load data into table, removing header/first index column
+                    let column_names = results.data[0].slice(1)
+                    let columns = column_names.map((h, i) => ({title: h, index: i}))
+                    let data = results.data.slice(1).filter(row => row.length > 1).map(row => row.slice(1))
+                    const range_index = column_names.indexOf('EnhancerCoordinates')
+                    ranges = data.map(r => get_genomic_range(r[range_index])) 
+                    table = new DataTable('#table_container', {
+                        responsive: true,
+                        scrollX: false,
+                        bLengthChange: false,
+                        columns: columns,
+                        data: data,
+                        select: {style: 'single'},
+                        deferRender: true,
+                        scroller: true,
+                        scrollY: 500,
+                        dom: '<Blfir<t>p>', //show information at top so it doesn't clip
+                        buttons: [
+                            {
+                                extend: 'colvis',
+                                collectionLayout: 'fixed columns',
+                                collectionTitle: 'Select Columns'
+                            },
+                            'copy', 
+                            'csv',
+                            {
+                                extend: 'selected',
+                                text: 'UCSC',
+                                action: function ( e, dt, button, config ) {
+                                    const pos = table.rows( { selected: true } ).data()[0][range_index];
+                                    const url = 'http://genome.ucsc.edu/s/ivlab/hg38_Nicole_updated_with_TF_footprinting_and_corrected_ATAC?position=' + pos;
+                                    window.open(url, '_blank').focus();
+                                }
+                            }
+                        ],
+                        'language': {
+                            'search': 'Search by gene or coordinate range:'
+                        }
+                    })
+
+                    const replot_main = () => plot_main(table.rows( {search: 'applied', order: 'index'} ), table.rows({search: 'removed'}), column_names);
+                    const replot_select = () => plot_add_selected(table.rows( {selected: true}), column_names);
+                    const replot_all = () => {replot_main(); replot_select()};
+                    
+                    const replot_all_debounced = debounce(replot_all, 100);
+                    replot_main();
+
+                    table.on('search.dt', replot_all_debounced);
+
+                    table.on('select', (e, dt, type, indexes) => {
+                        if(type !== 'row') return;
+                        replot_select();
+                        $('.buttons-selected').append(' (' + table.row(indexes[0]).data()[0] + ')');
+                    });
+
+                    table.on('deselect', (e, dt, type, indexes) => {
+                        if(type !== 'row') return;
+                        replot_select();
+                        $('.buttons-selected').text((i, prev) => prev.split(' ', 1)[0]);
+                    })
+
+                    $('.dataTables_filter input')
+                    .off()
+                    .on('keyup', function() {
+                        const val = $(this).val();
+                        range_search = get_genomic_range(val);
+                        if(range_search) table.search('').draw(); // pass empty string & use side channel to avoid default filter
+                        else table.search(val).draw();
+                    }); 
+
+                    let alert = document.getElementById('alert-help');
+                    alert.open = true;
+
+                    let alert_open = document.getElementById('alert-help-button');
+                    alert_open.onclick = () => alert.open = true;
+                }
+            });
+        });
+    </script>
+    </body>
+</html>
