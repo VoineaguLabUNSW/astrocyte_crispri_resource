@@ -317,7 +317,7 @@
                                     params.set('selection', row[name_index] + '_logits');
                                     params.set('subview', size/2)
                                     if (window.prediction_tab && !window.prediction_tab.closed) {
-                                        window.prediction_tab.search = params.toString();
+                                        window.prediction_tab.location.search = params.toString();
                                     } else {
                                         const url = `https://voineagulabunsw.github.io/deepsea_viewer?${params.toString()}`;
                                         window.prediction_tab = window.open(url, target="_blank");
