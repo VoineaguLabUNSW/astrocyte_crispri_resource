@@ -4,7 +4,7 @@
     <head>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.11.2/cdn/themes/light.css" />
         <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.11.2/cdn/shoelace-autoloader.js"></script>
-        
+
         <script src="https://unpkg.com/papaparse@latest/papaparse.min.js"></script>
         <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
 
@@ -23,8 +23,8 @@
                 list-style-position: inside;
                 margin: 0;
             }
-            li:before { 
-                content:"\0020\00BB\0020";  
+            li:before {
+                content:"\0020\00BB\0020";
                 color: var(--sl-color-primary-600);
                 font-size: 2em;
             }
@@ -56,13 +56,13 @@
                 --border-radius: 0px !important;
             }
         </style>
-        
+
     </head>
     <body style="height: 100vh">
         <span id="header" style="display:none">
         <sl-dialog id="alert-help" class="dialog-width" style="--width: 80vw;">
         <div style="height:100%; overflow:scroll">
-            <img src="./Website_Fig.jpg" alt="Experiment procedure overview" height="170px" style="display:block; margin-left: auto; margin-right: auto"> 
+            <img src="./Website_Fig.jpg" alt="Experiment procedure overview" height="170px" style="display:block; margin-left: auto; margin-right: auto">
             <sl-card class="card">
                 <h3>CRISPRi Volcano Plot Guide</h3>
                 <p>
@@ -90,7 +90,7 @@
                 <sl-icon slot="icon" name="info-circle"></sl-icon>
                 <div style="justify-content: space-between; display: flex;">
                     <p>All data sourced from supplementary <span style="color:var(--sl-color-primary-900)">Website_ResultsMx.csv</span></p>
-                    <span style="padding-right: 20px">                
+                    <span style="padding-right: 20px">
                         <sl-button-group label="External links">
                             <sl-tooltip content="Publication">
                                 <sl-button disabled><sl-icon name="mortarboard" label="CRISPRi paper"></sl-icon></sl-button>
@@ -104,7 +104,7 @@
                         </sl-tooltip>
                     </span>
                 </div>
-            </sl-alert>  
+            </sl-alert>
         </div>
         <div style="height: calc(100vh - 70px)">
             <sl-split-panel vertical style="--min: 30%; --max: 70%; --divider-width: 20px; height:100%">
@@ -150,7 +150,6 @@
         function is_in_genomic_range(inner, outer) {
             return inner[0] == outer[0] && inner[1] >= outer[1] && inner[2] <= outer[2];
         }
-
 
         DataTable.ext.search.push((settings, data, dataIndex) => (
             // Modify datatable search only when range_search is set
@@ -218,7 +217,7 @@
             const trace_metas = [
                 [separatorLabel + ' TRUE', '#ff7f0e', (row) => row[tIndex][0] != 'F', true],
                 [separatorLabel + ' FALSE', '#1f77b4', (row) => row[tIndex][0] != 'T', true]
-                
+
             ]
             let traces = get_plot_traces(removed, columns, [['all', '#bbbbbb', (row) => true, false]]);
             traces = traces.concat(get_plot_traces(results, columns, trace_metas));
@@ -276,7 +275,8 @@
                     let columns = column_names.map((h, i) => ({title: h, index: i}))
                     let data = results.data.slice(1).filter(row => row.length > 1).map(row => row.slice(1))
                     const range_index = column_names.indexOf('EnhancerCoordinates')
-                    ranges = data.map(r => get_genomic_range(r[range_index])) 
+                    const name_index = column_names.indexOf('EnhancerID')
+                    ranges = data.map(r => get_genomic_range(r[range_index]))
                     table = new DataTable('#table_container', {
                         responsive: true,
                         scrollX: false,
@@ -294,7 +294,7 @@
                                 collectionLayout: 'fixed columns',
                                 collectionTitle: 'Select Columns'
                             },
-                            'copy', 
+                            'copy',
                             'csv',
                             {
                                 extend: 'selected',
@@ -303,6 +303,26 @@
                                     const pos = table.rows( { selected: true } ).data()[0][range_index];
                                     const url = 'http://genome.ucsc.edu/s/ivlab/hg38_Nicole_updated_with_TF_footprinting_and_corrected_ATAC?position=' + pos;
                                     window.open(url, '_blank').focus();
+                                }
+                            },
+                            {
+                                extend: 'selected',
+                                text: 'Prediction',
+                                action: function ( e, dt, button, config ) {
+                                    // NOTE: This will keep opening new tabs if cross-origin
+                                    const row = table.rows( { selected: true } ).data()[0];
+                                    const params = new URLSearchParams(''/*window.prediction_tab?.location?.search || ''*/);
+                                    const range = get_genomic_range(row[range_index]);
+                                    const size = range[2] - range[1];
+                                    params.set('selection', row[name_index] + '_logits');
+                                    params.set('subview', size/2)
+                                    if (window.prediction_tab && !window.prediction_tab.closed) {
+                                        window.prediction_tab.search = params.toString();
+                                    } else {
+                                        const url = `https://voineagulabunsw.github.io/deepsea_viewer?${params.toString()}`;
+                                        window.prediction_tab = window.open(url, target="_blank");
+                                    }
+                                    window.prediction_tab.focus();
                                 }
                             }
                         ],
@@ -314,7 +334,7 @@
                     const replot_main = () => plot_main(table.rows( {search: 'applied', order: 'index'} ), table.rows({search: 'removed'}), column_names);
                     const replot_select = () => plot_add_selected(table.rows( {selected: true}), column_names);
                     const replot_all = () => {replot_main(); replot_select()};
-                    
+
                     const replot_all_debounced = debounce(replot_all, 100);
                     replot_main();
 
@@ -339,7 +359,7 @@
                         range_search = get_genomic_range(val);
                         if(range_search) table.search('').draw(); // pass empty string & use side channel to avoid default filter
                         else table.search(val).draw();
-                    }); 
+                    });
 
                     let alert = document.getElementById('alert-help');
                     alert.open = true;
