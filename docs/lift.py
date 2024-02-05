@@ -2,7 +2,7 @@ from liftover import get_lifter
 import csv
 
 converter = get_lifter('hg19', 'hg38')
-with open('Website_ResultsMX.csv', newline='') as f, open('Website_ResultsMX_lift.csv', 'w', newline='') as g:
+with open('Website_ResultsMX.csv', newline='') as f, open('Website_ResultsMx_lift.csv', 'w', newline='') as g:
     reader = csv.reader(f, delimiter=',')
     writer = csv.writer(g, delimiter=',')
     heading = next(reader)
