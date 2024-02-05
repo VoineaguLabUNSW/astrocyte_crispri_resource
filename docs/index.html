@@ -130,7 +130,7 @@
     <script>
         let table = undefined;
         var range_search = undefined;
-        let ranges = undefined;
+        let ranges_38 = undefined;
 
         const debounce = (callback, wait, starve=false) => {
             let pending = null;
@@ -153,7 +153,7 @@
 
         DataTable.ext.search.push((settings, data, dataIndex) => (
             // Modify datatable search only when range_search is set
-            !range_search || is_in_genomic_range(ranges[dataIndex], range_search)
+            !range_search || is_in_genomic_range(ranges_38[dataIndex], range_search)
         ));
 
         function get_plot_trace_empty() {
@@ -263,7 +263,7 @@
         var ro = new ResizeObserver(debounce((entries) => Plotly.Plots.resize('plot_container'), 100)).observe(document.getElementById('plot_container'));
 
         $(document).ready(function () {
-            Papa.parse('./Website_ResultsMx.csv', {
+            Papa.parse('./Website_ResultsMx_lift.csv', {
                 download: true,
                 dynamicTyping: false,
                 complete: (results, file) => {
@@ -274,9 +274,10 @@
                     let column_names = results.data[0].slice(1)
                     let columns = column_names.map((h, i) => ({title: h, index: i}))
                     let data = results.data.slice(1).filter(row => row.length > 1).map(row => row.slice(1))
-                    const range_index = column_names.indexOf('EnhancerCoordinates')
+                    const range_index_38 = column_names.indexOf('EnhancerCoordinatesHg38')
+                    const range_index_19 = column_names.indexOf('EnhancerCoordinatesHg19')
                     const name_index = column_names.indexOf('EnhancerID')
-                    ranges = data.map(r => get_genomic_range(r[range_index]))
+                    ranges_38 = data.map(r => get_genomic_range(r[range_index_38]))
                     table = new DataTable('#table_container', {
                         responsive: true,
                         scrollX: false,
@@ -300,7 +301,7 @@
                                 extend: 'selected',
                                 text: 'UCSC',
                                 action: function ( e, dt, button, config ) {
-                                    const pos = table.rows( { selected: true } ).data()[0][range_index];
+                                    const pos = table.rows( { selected: true } ).data()[0][range_index_38];
                                     const url = 'http://genome.ucsc.edu/s/ivlab/hg38_Nicole_updated_with_TF_footprinting_and_corrected_ATAC?position=' + pos;
                                     window.open(url, '_blank').focus();
                                 }
@@ -311,8 +312,8 @@
                                 action: function ( e, dt, button, config ) {
                                     // NOTE: This will keep opening new tabs if cross-origin
                                     const row = table.rows( { selected: true } ).data()[0];
-                                    const params = new URLSearchParams(''/*window.prediction_tab?.location?.search || ''*/);
-                                    const range = get_genomic_range(row[range_index]);
+                                    const params = new URLSearchParams(window.prediction_tab?.location?.search || '');
+                                    const range = get_genomic_range(row[range_index_19]);
                                     const size = range[2] - range[1];
                                     params.set('selection', row[name_index] + '_logits');
                                     params.set('subview', size/2)
