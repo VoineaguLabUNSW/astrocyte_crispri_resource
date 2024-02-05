@@ -315,7 +315,8 @@
                                     const params = new URLSearchParams(window.prediction_tab?.location?.search || '');
                                     const range = get_genomic_range(row[range_index_19]);
                                     const size = range[2] - range[1];
-                                    params.set('selection', row[name_index] + '_logits');
+                                    let existing = params.get('selection')?.split(',')[1]
+                                    params.set('selection', row[name_index] + '_logits' + (existing ? `,${existing}` : ''));
                                     params.set('subview', size/2)
                                     if (window.prediction_tab && !window.prediction_tab.closed) {
                                         window.prediction_tab.postMessage({type: 'heatmap_goto', path: `/?${params.toString()}`})
