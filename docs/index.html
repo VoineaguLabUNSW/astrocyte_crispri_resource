@@ -60,28 +60,28 @@
     </head>
     <body style="height: 100vh">
         <span id="header" style="display:none">
-        <sl-dialog id="alert-help" class="dialog-width" style="--width: 80vw;">
+        <sl-dialog id="alert-help" class="dialog-width" style="--width: 80vw;" label="CRISPRi Plot Guide">
         <div style="height:100%; overflow:scroll">
             <img src="./Website_Fig.jpg" alt="Experiment procedure overview" height="170px" style="display:block; margin-left: auto; margin-right: auto">
             <sl-card class="card">
-                <h3>CRISPRi Volcano Plot Guide</h3>
                 <p>
                     This website allows the exploration of CRISPR interference (CRISPRi) data on enhancers in normal human astrocytes (NHAs), from Green et al. 2024.
                     For each enhancer-gene pair tested in the screen, the following data is available:
                 </p>
                 <p>
-                    <b>Statistical significance and effect size (Hit, log2FC, P, FDR)</b><span style="color: var(--sl-color-primary-700)">, displayed in a searchable table and displayed on the corresponding Volcano plot.</span>
+                    <b>Statistical significance and effect size (Hit, log2FC, P, FDR)</b><span style="color: var(--sl-color-primary-700)">, displayed in a searchable table and displayed on the corresponding Volcano plot:</span>
                     <ul>
-                        <li>search the table by gene name or hg38 genome coordinates</li>
-                        <li>to download the data click on the CSV button.</li>
+                        <li>search the table by gene name or hg38 genome coordinates.</li>
+                        <li>to download the filtered data click on the CSV button.</li>
                     </ul>
-                </b>
+                </p>
                 <p>
-                    <b>ATAC-seq, TT-seq, and Deep-learning-based functional variant annotation</b><span style="color: var(--sl-color-primary-700)">, displayed as a UCSC genome browser track collection.</span>
+                    <b>ATAC-seq, TT-seq, and Deep-learning-based functional variant annotation</b><span style="color: var(--sl-color-primary-700)">, displayed as a UCSC genome browser track collection and heatmap:</span>
                     <ul>
                         <li>select an enhancer-gene pair in the table OR plot and click the UCSC button to navigate to the enhancer position.</li>
+                        <li>select an enhancer-gene pair and click the prediction button to navigate to the enhancer's DeepSEA (beluga) heatmap viewer.</li>
                     </ul>
-                </b>
+                </p>
             </sl-card>
         </div>
     </sl-dialog>
