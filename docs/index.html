@@ -60,7 +60,7 @@
     </head>
     <body style="height: 100vh">
         <span id="header" style="display:none">
-        <sl-dialog id="alert-help" class="dialog-width" style="--width: 80vw;" label="CRISPRi Plot Guide">
+        <sl-dialog id="alert-help" class="dialog-width" style="--width: 80vw;" label="Brief user guide">
         <div style="height:100%; overflow:scroll">
             <img src="./Website_Fig.jpg" alt="Experiment procedure overview" height="170px" style="display:block; margin-left: auto; margin-right: auto">
             <sl-card class="card">
@@ -89,7 +89,7 @@
             <sl-alert open style="display: block">
                 <sl-icon slot="icon" name="info-circle"></sl-icon>
                 <div style="justify-content: space-between; display: flex;">
-                    <p>All data sourced from supplementary <span style="color:var(--sl-color-primary-900)">Website_ResultsMx.csv</span></p>
+                    <p>CRISPRi screening of enhancers in human primary astrocytes</p>
                     <span style="padding-right: 20px">
                         <sl-button-group label="External links">
                             <sl-tooltip content="Publication">
@@ -279,6 +279,7 @@
                     const name_index = column_names.indexOf('EnhancerID')
                     ranges_38 = data.map(r => get_genomic_range(r[range_index_38]))
                     table = new DataTable('#table_container', {
+                        order: [[column_names.indexOf('log2fc'), 'asc']],
                         responsive: true,
                         scrollX: false,
                         bLengthChange: false,
@@ -306,7 +307,7 @@
                                     window.open(url, '_blank').focus();
                                 }
                             },
-                            {
+                            /*{
                                 extend: 'selected',
                                 text: 'Prediction',
                                 action: function ( e, dt, button, config ) {
@@ -326,7 +327,7 @@
                                     }
                                     window.prediction_tab.focus();
                                 }
-                            }
+                            }*/
                         ],
                         'language': {
                             'search': 'Search by gene or coordinate range:'
