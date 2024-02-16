@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang='en'>
     <head>
@@ -263,7 +262,7 @@
         var ro = new ResizeObserver(debounce((entries) => Plotly.Plots.resize('plot_container'), 100)).observe(document.getElementById('plot_container'));
 
         $(document).ready(function () {
-            Papa.parse('./Website_ResultsMx_lift.csv', {
+            Papa.parse('./Website_ResultsMx.csv', {
                 download: true,
                 dynamicTyping: false,
                 complete: (results, file) => {
@@ -274,8 +273,7 @@
                     let column_names = results.data[0].slice(1)
                     let columns = column_names.map((h, i) => ({title: h, index: i}))
                     let data = results.data.slice(1).filter(row => row.length > 1).map(row => row.slice(1))
-                    const range_index_38 = column_names.indexOf('EnhancerCoordinatesHg38')
-                    const range_index_19 = column_names.indexOf('EnhancerCoordinatesHg19')
+                    const range_index_38 = column_names.indexOf('EnhancerCoordinates')
                     const name_index = column_names.indexOf('EnhancerID')
                     ranges_38 = data.map(r => get_genomic_range(r[range_index_38]))
                     table = new DataTable('#table_container', {
@@ -301,24 +299,23 @@
                             {
                                 extend: 'selected',
                                 text: 'UCSC',
+                                titleAttr: 'Open custom track',
                                 action: function ( e, dt, button, config ) {
                                     const pos = table.rows( { selected: true } ).data()[0][range_index_38];
                                     const url = 'http://genome.ucsc.edu/s/ivlab/hg38_Nicole_updated_with_TF_footprinting_and_corrected_ATAC?position=' + pos;
                                     window.open(url, '_blank').focus();
                                 }
                             },
-                            /*{
+                            {
                                 extend: 'selected',
-                                text: 'Prediction',
+                                text: 'DeepSEA',
+                                titleAttr: 'Open in silico mutagenesis',
                                 action: function ( e, dt, button, config ) {
                                     // NOTE: This will keep opening new tabs if cross-origin
                                     const row = table.rows( { selected: true } ).data()[0];
                                     const params = new URLSearchParams(window.prediction_tab?.location?.search || '');
-                                    const range = get_genomic_range(row[range_index_19]);
-                                    const size = range[2] - range[1];
                                     let existing = params.get('selection')?.split(',')[1]
-                                    params.set('selection', row[name_index] + '_logits' + (existing ? `,${existing}` : ''));
-                                    params.set('subview', size/2)
+                                    params.set('selection', row[name_index] + (existing ? `,${existing}` : ''));
                                     if (window.prediction_tab && !window.prediction_tab.closed) {
                                         window.prediction_tab.postMessage({type: 'heatmap_goto', path: `/?${params.toString()}`})
                                     } else {
@@ -327,7 +324,7 @@
                                     }
                                     window.prediction_tab.focus();
                                 }
-                            }*/
+                            }
                         ],
                         'language': {
                             'search': 'Search by gene or coordinate range:'
