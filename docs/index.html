@@ -71,7 +71,7 @@
                     <b>Statistical significance and effect size (Hit, log2FC, P, FDR)</b><span style="color: var(--sl-color-primary-700)">, displayed in a searchable table and displayed on the corresponding Volcano plot:</span>
                     <ul>
                         <li>search the table by gene name or hg38 genome coordinates.</li>
-                        <li>to download the filtered data click on the CSV button.</li>
+                        <li>to download functional annotation data for the enhancer or gene in the selected pair click on the Annot button. Information on the functional annotation data is available in the Annotation Readme.txt.</li>
                     </ul>
                 </p>
                 <p>
@@ -128,8 +128,17 @@
         </div>
     <script>
         let table = undefined;
-        var range_search = undefined;
+        let range_search = undefined;
         let ranges_38 = undefined;
+        let indexer_output = undefined;
+
+        const download = (content, filename, contentType='application/octet-stream') => {
+            var a = document.createElement('a');
+            var blob = new Blob([content], {'type': contentType});
+            a.href = window.URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+        }
 
         const debounce = (callback, wait, starve=false) => {
             let pending = null;
@@ -139,6 +148,20 @@
                 if(starve || (now - (last + wait)) < wait) window.clearTimeout(pending);
                 pending = window.setTimeout(() => {last=now; callback.apply(null, args)}, wait);
             };
+        }
+
+        function download_indexer_csv(file, value) {
+            console.log(file, value)
+            if (indexer_output === undefined) return
+            const target = indexer_output.files[file].indices[value]
+            const enc = new TextDecoder("utf-8");
+            if (window.location.host.endsWith(".github.io") && !indexer_output.prefix) console.error("GitHub Pages/raw incorrectly calculate ranges based on compressed length")
+            fetch((indexer_output.prefix || "./") + file, {
+                headers: {'Range': 'bytes=' + `${target[0]}-${target[1]-1}`},
+            })
+                .then(res => res.arrayBuffer())
+                .then(arr => download(indexer_output.files[file].header + enc.decode(arr.slice(0, target[1]-target[0])), file.replace('FullTable', value), 'text/csv'))
+                .catch(err => console.log(err));
         }
 
         function get_genomic_range(val) {
@@ -250,7 +273,6 @@
             document.getElementById('plot_container')
             .removeAllListeners('plotly_click')
             .on('plotly_click', function(data) {
-                console.log(data)
                 const row_index = data.points[0].customdata
                 if(row_index !== undefined) {
                     table.row(row_index).select().scrollTo(false)
@@ -262,6 +284,7 @@
         var ro = new ResizeObserver(debounce((entries) => Plotly.Plots.resize('plot_container'), 100)).observe(document.getElementById('plot_container'));
 
         $(document).ready(function () {
+            // Fetch table for display
             Papa.parse('./Website_ResultsMx.csv', {
                 download: true,
                 dynamicTyping: false,
@@ -275,6 +298,7 @@
                     let data = results.data.slice(1).filter(row => row.length > 1).map(row => row.slice(1))
                     const range_index_38 = column_names.indexOf('EnhancerCoordinates')
                     const name_index = column_names.indexOf('EnhancerID')
+                    const gene_index = column_names.indexOf('Gene')
                     ranges_38 = data.map(r => get_genomic_range(r[range_index_38]))
                     table = new DataTable('#table_container', {
                         order: [[column_names.indexOf('log2fc'), 'asc']],
@@ -295,11 +319,11 @@
                                 collectionTitle: 'Select Columns'
                             },
                             'copy',
-                            'csv',
                             {
                                 extend: 'selected',
                                 text: 'UCSC',
                                 titleAttr: 'Open custom track',
+                                className: 'enh',
                                 action: function ( e, dt, button, config ) {
                                     const pos = table.rows( { selected: true } ).data()[0][range_index_38];
                                     const url = 'http://genome.ucsc.edu/s/ivlab/hg38_Nicole_updated_with_TF_footprinting_and_corrected_ATAC?position=' + pos;
@@ -309,6 +333,7 @@
                             {
                                 extend: 'selected',
                                 text: 'DeepSEA',
+                                className: 'enh',
                                 titleAttr: 'Open in silico mutagenesis',
                                 action: function ( e, dt, button, config ) {
                                     // NOTE: This will keep opening new tabs if cross-origin
@@ -323,6 +348,26 @@
                                         window.prediction_tab = window.open(url, target="_blank");
                                     }
                                     window.prediction_tab.focus();
+                                }
+                            },
+                            {
+                                extend: 'selected',
+                                text: 'Annot Enh',
+                                className: 'enh',
+                                titleAttr: 'Download additional enhancer data for selection',
+                                action: function ( e, dt, button, config ) {
+                                    const row = table.rows( { selected: true } ).data()[0];
+                                    download_indexer_csv('Enh_annot_FullTable.csv', row[name_index])
+                                }
+                            },
+                            {
+                                extend: 'selected',
+                                text: 'Annot Gene',
+                                className: 'gene',
+                                titleAttr: 'Download additional gene data for selection',
+                                action: function ( e, dt, button, config ) {
+                                    const row = table.rows( { selected: true } ).data()[0];
+                                    download_indexer_csv('Gene_annot_FullTable.csv', row[gene_index])
                                 }
                             }
                         ],
@@ -343,13 +388,15 @@
                     table.on('select', (e, dt, type, indexes) => {
                         if(type !== 'row') return;
                         replot_select();
-                        $('.buttons-selected').append(' (' + table.row(indexes[0]).data()[0] + ')');
+                        const row = table.row(indexes[0]).data()
+                        $('.buttons-selected.enh').append(' (' + row[name_index] + ')');
+                        $('.buttons-selected.gene').append(' (' + row[gene_index] + ')');
                     });
 
                     table.on('deselect', (e, dt, type, indexes) => {
                         if(type !== 'row') return;
                         replot_select();
-                        $('.buttons-selected').text((i, prev) => prev.split(' ', 1)[0]);
+                        $('.buttons-selected').text((i, prev) => prev.split(' (', 1)[0]);
                     })
 
                     $('.dataTables_filter input')
@@ -368,6 +415,12 @@
                     alert_open.onclick = () => alert.open = true;
                 }
             });
+            
+            // Fetch indexer output to support partial csv downloading
+            fetch('./indexer_output.json')
+                .then(res => res.json())
+                .then(out => indexer_output = out)
+                .catch(err => console.log(err));
         });
     </script>
     </body>
